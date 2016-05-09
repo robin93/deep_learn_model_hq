@@ -17,6 +17,7 @@ os.chdir('C:\\Users\\Administrator\\Desktop\\Data Copy for DL\\CC')
 cwd = os.getcwd()
 
 import technical_indicators as ti
+import read_filenames as rf
 
    
 def filenames(file):
@@ -80,17 +81,10 @@ def indicators(data_subset):
     data_subset['WilliamR(10)'] = ti.WilliamR(data_subset['Close'],data_subset['High'],data_subset['Low'],10)
     return data_subset
 
-#def params(data):
-#    mean =   data["Close"].mean()  
-#    std = data["Close"].std()
-#    return mean, std
-
-def rise_fall(data):
-    data['one_day_pct_change'] = ((data['Close']-data['Open'])*100)/data['Open']
-    return data
+#def rise_fall(data):
+#    data['one_day_pct_change'] = ((data['Close']-data['Open'])*100)/data['Open']
+#    return data
     
-    
-
 def cols_to_norm(data):
     cols_to_norm = ['Open', 'Open_lag1', 'Open_lag2', 'Open_lag3',
        'Open_lag4', 'High', 'High_lag1', 'High_lag2', 'High_lag3',
@@ -114,6 +108,17 @@ def data_sacntity_check(raw_data):
     data = data.fillna(method="backfill")
     data = data.fillna(method="ffill")
     return data
+
+def rise_fall(data,factor,dur):
+    data['PCT_CHG'] = (data['Close'].shift(-1*dur) - data['Close']) / data['Close'] # Percentage Change
+    mean,std = data['PCT_CHG'].mean(), data['PCT_CHG'].std() # Mean and Standard Deviation of Percent Change
+    up_bound,lower_bound = mean + factor*std, mean - factor*std # Upper and Lower Bound of Percent Change
+    rise =  'Significant_' + str(dur) + 'D_Rise' + str(factor) + 'STD'
+    fall =  'Significant_' + str(dur) + 'D_Fall' + str(factor) + 'STD'
+    data[rise] = data['PCT_CHG'].apply(lambda row : 1 if (row>up_bound) else 0).shift(-1) # Singificant Rise
+    data[fall] = data['PCT_CHG'].apply(lambda row : 1 if (row<lower_bound) else 0).shift(-1) # Singificant Fall
+    data = data.fillna(method="ffill")
+    return data
     
 def data_mod(file):
     name =   file.strip('.csv')  
@@ -124,15 +129,21 @@ def data_mod(file):
     data = data_sacntity_check(data)
     data = add_lags(data)  
     data = indicators(data)
-    data = rise_fall(data)
+    data = rise_fall(data,1.5,1)
+    data = rise_fall(data,1.5,3)
+    data = rise_fall(data,1.0,1)
+    data = rise_fall(data,1.0,3)
+    data = rise_fall(data,0.5,1)
+    data = rise_fall(data,0.5,3)    
     data = cols_to_norm(data)
-    data.insert(0, 'Equity', name)    
+    equity_name = ((name.split('#')[0]).split())[3]
+    data.insert(0, 'Equity',equity_name)    
     return data
 
 def main():
-    filename = filenames('filenames.txt')
+    filename = rf.read_filenames_from_symbollist('filenames.txt')
     # choose the equities from filename list to be analysed   
-    b = filename[0:1]
+    b = filename
     write_data(b) # FIle will be written by the name of 'out.csv' to the working directory
 
 if __name__ == '__main__':
