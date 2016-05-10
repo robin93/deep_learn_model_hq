@@ -46,10 +46,24 @@ all_cols = x_cols + y_cols
 #division into test and train 
 import pandas as pd 
 raw_data = pd.read_csv(filepath,header=0,sep=",")
+raw_data = raw_data[raw_data.columns[all_cols+[1]]]
 print(raw_data.groupby('Equity').size())
 unique_equity = raw_data.Equity.unique()
+train_dataframe,val_dataframe = pd.DataFrame,pd.DataFrame
+iter = 0
 for equity in unique_equity:
-    print(equity)
+    equity_data = raw_data[(raw_data.Equity==equity)]
+    equity_data = equity_data.sort(['Date'])
+    equity_train = equity_data.head(len(equity_data)-500)
+    equity_val = (equity_data.tail(500)).head(250)
+    if iter == 0:
+        train_dataframe,val_dataframe = equity_train, equity_val
+    else:
+        train_dataframe = train_dataframe.append(equity_train)
+        val_dataframe = val_dataframe.append(equity_val)
+    iter += 1
+    print(len(train_dataframe))
+    print(len(val_dataframe))
 
 #treating class imbalance
 
