@@ -58,26 +58,32 @@ def add_lags(data_subset):
     data_subset = data_subset.fillna(method="backfill")
     data_subset = data_subset.fillna(method="ffill")
     return data_subset
+
+"""'MA(5)', 'MA(20)', 'EWMA(9)', 'EWMA(20)', 'EWMA(45)',
+       'Volatility(125)','Histogram2', 'RSI(42)','FastStochastic(k%)', 'CCI', 
+       'FastStochastic(d%)', 'SlowStochastic(d%)', 'Momentum(7)','MovingVariance',
+        'CCI2', 'DisparityIndex(20)','Momentum(20)', 'RateOfChange(20)', 
+        'Momentum(40)', 'RateOfChange(40)','MACD2', 'SIGNAL2', 'RateOfChange(7)'"""
     
 def indicators(data_subset):
-    data_subset['MA(5)'] = ti.ma(data_subset['Close'],5)
-    data_subset['MA(20)'] = ti.ma(data_subset['Close'],20)
-    data_subset['EWMA(20)'] = ti.ewma(data_subset['Close'], 9)
+    data_subset['MA(45)'] = ti.ma(data_subset['Close'],45)
+    #data_subset['MA(20)'] = ti.ma(data_subset['Close'],20)
+    #data_subset['EWMA(20)'] = ti.ewma(data_subset['Close'], 9)
     data_subset['MACD'] = ti.MACD(data_subset['Close'], 12 , 26)
     data_subset['SIGNAL'] = ti.signal(data_subset['Close'],12,26,9)
     data_subset['Histogram'] = ti.histogram (data_subset['Close'],12,26,9)
     data_subset['RSI(14)'] = ti.rsi(data_subset['Close'], 14)
     data_subset['BolBandUpper'] = ti.ma(data_subset['Close'],20) + (2 * ti.stdev(data_subset['Close'], 20))
     data_subset['BolBandLower'] = ti.ma(data_subset['Close'], 20) - (2 * ti.stdev(data_subset['Close'],20))
-    data_subset['FastStochastic(k%)'],data_subset['FastStochastic(d%)'] , data_subset['SlowStochastic(d%)']= ti.STOK(data_subset['Close'],data_subset['High'],data_subset['Low'],14,3)
-    data_subset['Momentum(7)'] = ti.Momentum(data_subset['Close'],7)
-    data_subset['RateOfChange(7)'] = ti.RateOfChange(data_subset['Close'],7)
+   # data_subset['FastStochastic(k%)'],data_subset['FastStochastic(d%)'] , data_subset['SlowStochastic(d%)']= ti.STOK(data_subset['Close'],data_subset['High'],data_subset['Low'],14,3)
+   # data_subset['Momentum(7)'] = ti.Momentum(data_subset['Close'],7)
+    #data_subset['RateOfChange(7)'] = ti.RateOfChange(data_subset['Close'],7)
     data_subset['MovingVariance'] = ti.MovingVariance(data_subset['Close'],7)
-    data_subset['CCI'] = ti.CCI(data_subset['Close'],data_subset['High'],data_subset['Low'],20,20)
+    #data_subset['CCI'] = ti.CCI(data_subset['Close'],data_subset['High'],data_subset['Low'],20,20)
     data_subset['Chaikin'] = ti.Chaikin(data_subset['Close'],data_subset['High'],data_subset['Low'],data_subset['Volume'])
     data_subset['DisparityIndex(10)'] = ti.DisparityIndex(data_subset['Close'],10)
-    data_subset['Volatility(20)'] = ti.volatility(data_subset['Close'],20)
-    data_subset['Volatility(10)'] = ti.volatility(data_subset['Close'],10)
+    data_subset['Volatility(30)'] = ti.volatility(data_subset['Close'],30)
+    data_subset['Volatility(250)'] = ti.volatility(data_subset['Close'],250)
     data_subset['WilliamR(10)'] = ti.WilliamR(data_subset['Close'],data_subset['High'],data_subset['Low'],10)
     return data_subset
 
@@ -91,12 +97,10 @@ def cols_to_norm(data):
        'High_lag4', 'Low', 'Low_lag1', 'Low_lag2', 'Low_lag3', 'Low_lag4',
        'Close', 'Close_lag1', 'Close_lag2', 'Close_lag3', 'Close_lag4',
        'Volume', 'Volume_lag1', 'Volume_lag2', 'Volume_lag3',
-       'Volume_lag4', 'MA(5)', 'MA(20)', 'EWMA(20)', 'MACD', 'SIGNAL',
+       'Volume_lag4', 'MA(45)', 'MACD', 'SIGNAL',
        'Histogram', 'RSI(14)', 'BolBandUpper', 'BolBandLower',
-       'FastStochastic(k%)', 'FastStochastic(d%)', 'SlowStochastic(d%)',
-       'Momentum(7)', 'RateOfChange(7)', 'MovingVariance', 'CCI',
-       'Chaikin', 'DisparityIndex(10)', 'Volatility(20)', 'Volatility(10)',
-       'WilliamR(10)']
+        'MovingVariance', 'Chaikin', 'DisparityIndex(10)', 
+        'Volatility(30)', 'Volatility(250)','WilliamR(10)']
     data[cols_to_norm] = data[cols_to_norm].apply(lambda x: (x - x.min()) / (x.max() - x.min())) 
     return data
    
