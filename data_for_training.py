@@ -5,6 +5,8 @@ Created on Mon May  9 13:16:24 2016
 @author: Administrator
 """
 
+
+
 raw_data_file = 'NASDAQ_62_with_indicators.csv'
 
 import os
@@ -14,6 +16,9 @@ cwd = os.getcwd()
 filepath = os.path.join(cwd,raw_data_file)
 
 raw_data = open(filepath,"r")
+
+import pandas as pd
+data = pd.read_csv(os.path.join(cwd,raw_data_file))
 
 row_count = 0
 for line in raw_data.readlines():
@@ -29,10 +34,10 @@ for column in cols:
     #print(column,col_count)
     col_count += 1
     
-date_OHLC_lag_indexes = [i for i in range(2,28)]
-technical_indicator_indexes = [i for i in range(28,49)]
-indicator_indexes = [i for i in range(62,78)]
-predictor_index = [58]
+date_OHLC_lag_indexes = [i for i in range(3,28)]
+technical_indicator_indexes = [i for i in range(28,42)]
+indicator_indexes = [i for i in range(54,70)]
+predictor_index = [50]
 
 x_cols = date_OHLC_lag_indexes +technical_indicator_indexes + indicator_indexes
 y_cols = predictor_index
@@ -47,7 +52,7 @@ all_cols = x_cols + y_cols
 #division into test and train 
 import pandas as pd 
 raw_data = pd.read_csv(filepath,header=0,sep=",")
-raw_data = raw_data[raw_data.columns[[1]+all_cols]]
+raw_data = raw_data[raw_data.columns[[1,2]+all_cols]]
 print(raw_data.groupby('Equity').size())
 unique_equity = raw_data.Equity.unique()
 train_dataframe,val_dataframe = pd.DataFrame,pd.DataFrame

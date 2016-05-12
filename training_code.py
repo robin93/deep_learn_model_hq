@@ -23,6 +23,7 @@ from lasagne.nonlinearities import softmax
 from lasagne.layers import InputLayer, DenseLayer, get_output
 from lasagne.updates import sgd, apply_momentum
 from lasagne.objectives import binary_crossentropy,aggregate
+from lasagne.init import Constant,Normal
 import pandas as pd
 import timeit
 
@@ -34,11 +35,15 @@ start_time = timeit.default_timer()
 
 def load_data():
     from numpy import genfromtxt
-    cols = [i for i in range(0,64)]
+    cols = [i for i in range(0,57)]
     train = genfromtxt('55_equity_train_data.csv', delimiter=',',usecols=cols)
-    train  = np.delete(train, np.s_[27:47], axis=1)  
+    train  = np.delete(train, np.s_[0:1], axis=1) 
+    train = np.delete(train, np.s_[39:55], axis=1)
     validation = genfromtxt('55_equity_val_data.csv', delimiter=',',usecols=cols)
-    validation =  np.delete(validation, np.s_[27:47], axis=1)
+    validation =  np.delete(validation, np.s_[0:1], axis=1)
+    validation = np.delete(validation, np.s_[39:55], axis=1)
+    train = train[0:train.shape[0]/10,:]
+    #validation = validation[train.shape[0]/20:train.shape[0]*2/20,:]    
     return train, validation
 
 train , validation = load_data()
@@ -62,42 +67,14 @@ def build_mlp(input_var, input_width, output_dim):
     Build a network consistent initial running code of MLP.
     """
 
-    l_in = lasagne.layers.InputLayer(
-        (None, input_width),
-        name='INPUT'
-    )
-
-    l_in_drop = lasagne.layers.DropoutLayer(l_in, p=0.1)
-
-    l_hid1 = lasagne.layers.DenseLayer(
-        l_in_drop, 
-        num_units=100,
-        W=lasagne.init.Normal(.01),
-        b=lasagne.init.Constant(.1),
-        name = 'Hidden1'
-    )
-
-    l_hid1_drop = lasagne.layers.DropoutLayer(l_hid1, p=0.4)    
-    
-    l_hid2 = lasagne.layers.DenseLayer(
-        l_hid1_drop,
-        num_units=100,
-        W=lasagne.init.Normal(.01),
-        b=lasagne.init.Constant(.1),
-        name = 'Hidden2'
-    )
-    
-    l_hid2_drop = lasagne.layers.DropoutLayer(l_hid2, p=0.4)    
-    
-    l_out = lasagne.layers.DenseLayer(
-        l_hid2_drop,
-        num_units=output_dim,
-        nonlinearity=lasagne.nonlinearities.sigmoid,
-        W=lasagne.init.Normal(.01),
-        b=lasagne.init.Constant(.1),
-        name = 'OUTPUT'
-    )
-
+    l_in = lasagne.layers.InputLayer((None,input_width),name='INPUT')
+    #l_in_drop = lasagne.layers.DropoutLayer(l_in, p=0.1)
+    l_hid1 = lasagne.layers.DenseLayer(l_in,num_units=100,name = 'Hidden1')
+    #l_hid1_drop = lasagne.layers.DropoutLayer(l_hid1, p=0.4)
+    l_hid2 = lasagne.layers.DenseLayer(l_hid1,num_units=100,name='Hidden2')
+    #l_hid2_drop = lasagne.layers.DropoutLayer(l_hid2, p=0.4)
+    l_out = lasagne.layers.DenseLayer(l_hid2,num_units=output_dim,
+        nonlinearity=lasagne.nonlinearities.sigmoid,name = 'OUTPUT')
     return l_out
 
 def run_mlp(train, val, num_epochs):
@@ -107,25 +84,32 @@ def run_mlp(train, val, num_epochs):
     val_rows, val_cols = val.shape    
     val_rows, val_cols = val_rows, (val_cols-1)    
     
-    X_train, y_train,X_val, y_val = train[0:train_rows ,0:train_cols],train[0:train_rows,train_cols:],val[0:val_rows,0:val_cols],val[0:val_rows,val_cols:]
-    print (X_train.shape, y_train.shape,X_val.shape, y_val.shape)    
-    print (y_train[0:100,])
+    X_train,y_train = train[0:train_rows ,0:train_cols],train[0:train_rows,train_cols:]
+    X_val,y_val = val[0:val_rows,0:val_cols],val[0:val_rows,val_cols:]
     # Theano variables
     input_var = T.matrix('inputs')
     target_var = T.matrix('targets')
     
     network = build_mlp(input_var, train_cols, 1)
     
+#    """loading weight values from the previous model"""
+#    with np.load('model_first_run.npz') as f:
+#        param_values = [f['arr_%d'%i] for i in range(len(f.files))]
+#        param_values[0] = param_values[0][4:43]
+#    lasagne.layers.set_all_param_values(network,param_values)
+    
     prediction = lasagne.layers.get_output(network,input_var, deterministic = True)
     loss = lasagne.objectives.binary_crossentropy(prediction, target_var)
     loss = aggregate(loss, mode='mean')
     
     params = lasagne.layers.get_all_params(network, trainable=True)
-    updates = lasagne.updates.sgd(loss, params, learning_rate=0.1)
+    updates = lasagne.updates.sgd(loss, params, learning_rate=0.5)
     
     train_fn = theano.function([input_var, target_var],loss, updates=updates)
     
-    val_fn = theano.function([input_var, target_var],loss)     
+    val_fn = theano.function([input_var, target_var],loss) 
+
+    f_test = theano.function([input_var], prediction)    
     
     val_err_list,train_err_list = list(),list()
     print("Starting training...")
@@ -136,29 +120,31 @@ def run_mlp(train, val, num_epochs):
         train_err = 0
         train_batches = 0
         #start_time = time.time()
-        for batch in iterate_minibatches(X_train,y_train,500,shuffle=True):
+        for batch in iterate_minibatches(X_train,y_train,100,shuffle=True):
             inputs,targets = batch
             #print (inputs.shape, targets.shape)
             batch_error = train_fn(inputs,targets)
+            #print (list(f_test(inputs)))
             train_err += batch_error
             train_batches += 1
             #print (batch_error, train_batches)
-            if (train_batches%2==0):
-                print(train_batches)
+            #if (train_batches%10==0):
+                #print(train_batches)
+                #print (batch_error)
         train_err_list.append(train_err)    
         
         
         val_err = 0
         val_batches = 0
-        for batch in iterate_minibatches(X_val, y_val, 400, shuffle=False):
+        for batch in iterate_minibatches(X_val, y_val, 50, shuffle=False):
             inputs, targets = batch
             err = val_fn(inputs, targets)
             val_err += err
             val_batches += 1
-            print (err,val_batches)
+            #print (err,val_batches)
         val_err_list.append(val_err)
         # Save results of the epoch
-        if (epoch%50 == 0):
+        if (epoch%5 == 0):
             file_name = 'model_epoch_' + str(epoch) + '.npz'
             np.savez(file_name,*lasagne.layers.get_all_param_values(network))
         print ('Epoch: ',epoch, '  train error: ',train_err,' val erro:',val_err)
@@ -170,7 +156,7 @@ def run_mlp(train, val, num_epochs):
     return val_err_list,train_err_list   
 
     
-#def main():
+#def main():•
 #    train , test = load_data()
 #    print (train[10:60,].shape)
 #    val_err_list,train_err_list = run_mlp(train , test, 5)
@@ -182,5 +168,5 @@ end_time = timeit.default_timer()
 
 time=  (end_time - start_time) / 60
 
-#if __name__ == '__main__':
-#    main()      
+if __name__ == '__main__':
+   main()      
