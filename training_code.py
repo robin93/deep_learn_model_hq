@@ -31,19 +31,18 @@ train_err_file = open("train_error.txt","w+")
 val_err_file = open("val_error.txt","w+")
 #data = pd.read_csv(os.path.join(cwd ,'55_equity_train_data.csv') ,sep =',', header = None)
 
-start_time = timeit.default_timer()
+
 
 def load_data():
     from numpy import genfromtxt
-    cols = [i for i in range(0,57)]
-    train = genfromtxt('55_equity_train_data.csv', delimiter=',',usecols=cols)
-    train  = np.delete(train, np.s_[0:1], axis=1) 
-    train = np.delete(train, np.s_[39:55], axis=1)
-    validation = genfromtxt('55_equity_val_data.csv', delimiter=',',usecols=cols)
-    validation =  np.delete(validation, np.s_[0:1], axis=1)
-    validation = np.delete(validation, np.s_[39:55], axis=1)
-    train = train[0:train.shape[0]/10,:]
-    #validation = validation[train.shape[0]/20:train.shape[0]*2/20,:]    
+    cols = [i for i in range(0,43)]
+    train = genfromtxt('C:\\Users\\Administrator\\Desktop\\Data Copy for DL\\Training sets\\training_data.csv', delimiter=',',usecols=cols, skip_header=20)
+    train  = np.delete(train, np.s_[0:3], axis=1) 
+#    train = np.delete(train, np.s_[39:55], axis=1)
+    validation = genfromtxt('C:\\Users\\Administrator\\Desktop\\Data Copy for DL\\Training sets\\val_data.csv', delimiter=',',usecols=cols, skip_header=20)
+    validation =  np.delete(validation, np.s_[0:3], axis=1)
+#    validation = np.delete(validation, np.s_[39:55], axis=1)
+#    train = train[0:train.shape[0]/10,:]    
     return train, validation
 
 train , validation = load_data()
@@ -68,12 +67,12 @@ def build_mlp(input_var, input_width, output_dim):
     """
 
     l_in = lasagne.layers.InputLayer((None,input_width),name='INPUT')
-    #l_in_drop = lasagne.layers.DropoutLayer(l_in, p=0.1)
-    l_hid1 = lasagne.layers.DenseLayer(l_in,num_units=100,name = 'Hidden1')
-    #l_hid1_drop = lasagne.layers.DropoutLayer(l_hid1, p=0.4)
-    l_hid2 = lasagne.layers.DenseLayer(l_hid1,num_units=100,name='Hidden2')
-    #l_hid2_drop = lasagne.layers.DropoutLayer(l_hid2, p=0.4)
-    l_out = lasagne.layers.DenseLayer(l_hid2,num_units=output_dim,
+    l_in_drop = lasagne.layers.DropoutLayer(l_in, p=0.1)
+    l_hid1 = lasagne.layers.DenseLayer(l_in_drop,num_units=100,name = 'Hidden1')
+    l_hid1_drop = lasagne.layers.DropoutLayer(l_hid1, p=0.4)
+    l_hid2 = lasagne.layers.DenseLayer(l_hid1_drop,num_units=100,name='Hidden2')
+    l_hid2_drop = lasagne.layers.DropoutLayer(l_hid2, p=0.4)
+    l_out = lasagne.layers.DenseLayer(l_hid2_drop,num_units=output_dim,
         nonlinearity=lasagne.nonlinearities.sigmoid,name = 'OUTPUT')
     return l_out
 
@@ -105,10 +104,13 @@ def run_mlp(train, val, num_epochs):
     params = lasagne.layers.get_all_params(network, trainable=True)
     updates = lasagne.updates.sgd(loss, params, learning_rate=0.5)
     
+    # Train Function
     train_fn = theano.function([input_var, target_var],loss, updates=updates)
     
+    # Validation function
     val_fn = theano.function([input_var, target_var],loss) 
-
+    
+    # test function
     f_test = theano.function([input_var], prediction)    
     
     val_err_list,train_err_list = list(),list()
@@ -116,7 +118,7 @@ def run_mlp(train, val, num_epochs):
 
     val_err_list,train_err_list = list(),list()
     for epoch in range(num_epochs):
-                
+        start_time = timeit.default_timer()        
         train_err = 0
         train_batches = 0
         #start_time = time.time()
@@ -152,7 +154,8 @@ def run_mlp(train, val, num_epochs):
         val_err_line = (str(epoch)+","+str(val_err)+"\n")
         train_err_file.writelines(train_err_line)
         val_err_file.writelines(val_err_line)
-        
+        end_time = timeit.default_timer()
+        print (end_time - start_time)
     return val_err_list,train_err_list   
 
     
@@ -164,9 +167,9 @@ def run_mlp(train, val, num_epochs):
 
 val_err_list,train_err_list = run_mlp(train , validation, 1000)
 
-end_time = timeit.default_timer()
-
-time=  (end_time - start_time) / 60
-
-if __name__ == '__main__':
-   main()      
+#end_time = timeit.default_timer()
+#
+#time=  (end_time - start_time) / 60
+#
+#if __name__ == '__main__':
+#   main()      
