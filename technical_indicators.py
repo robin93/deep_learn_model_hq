@@ -75,16 +75,45 @@ def MeanDeviation(price, d):
     mad = price.rolling(window =d, center = False).apply(lambda x: np.abs(x - x.mean()).mean())
     return mad.fillna(0)
 
+#Average True Range  
+def ATR(df, n): 
+#    import os
+#    n=2
+#    name =   'NASDAQ EQUITIES FUT AAWW#68164 1D.csv'
+#    path = "C:\\Users\\Administrator\\Desktop\\Data Copy for DL\\CC"
+#    df = pd.read_csv(os.path.join(path ,name) ,sep =',', header=None)
+#    df.drop(df.columns[[1]], axis=1, inplace = True)
+#    df.drop(df.columns[6:], axis=1, inplace = True)
+#    df.columns = ['Date', 'Open', 'High', 'Low', 'Close','Volume']
+    i = 0  
+    TR_l = [0]  
+    while i < df.index[-1]:  
+        TR = max(df.get_value(i + 1, 'High'), df.get_value(i, 'Close')) - min(df.get_value(i + 1, 'Low'), df.get_value(i, 'Close'))  
+        TR_l.append(TR)  
+        i = i + 1  
+    TR_s = pd.Series(TR_l)  
+    ATR = pd.Series(TR_s.ewm(ignore_na = False, adjust = True, span = n, min_periods = n).mean(), name = 'ATR_' + str(n)) 
+    ATR = ATR.fillna(0)
+#    df.drop('ATR_2', axis=1, inplace = True)
+    return ATR
+
 # Chaikin Oscillator
-def Chaikin(price, high, low, volume):
-    MoneyFlowMultiplier = ((price - low) - (high - low))/ (high - low)
-    MoneyFlowVolume = MoneyFlowMultiplier * volume
-    ADL = price.copy()
-    ADL[0] = 0
-    for i in range(1,len(price)):
-        ADL[i] = ADL[i-1] + MoneyFlowVolume[i] 
-    Chaikin = ewma(ADL,3) - ewma(ADL,10)
-    return Chaikin.fillna(0)
+#def Chaikin(price, high, low, volume):
+#    MoneyFlowMultiplier = ((price - low) - (high - low))/ (high - low)
+#    MoneyFlowVolume = MoneyFlowMultiplier * volume
+#    ADL = price.copy()
+#    ADL[0] = 0
+#    for i in range(1,len(price)):
+#        ADL[i] = ADL[i-1] + MoneyFlowVolume[i] 
+#    Chaikin = ewma(ADL,3) - ewma(ADL,10)
+#    return Chaikin.fillna(0)
+    
+def Chaikin(df):  
+    ad = (2 * df['Close'] - df['High'] - df['Low']) / (df['High'] - df['Low']) * df['Volume']  
+    Chaikin = pd.Series(pd.ewma(ad, span = 3, min_periods = 2) - pd.ewma(ad, span = 10, min_periods = 9), name = 'Chaikin')  
+    Chaikin.fillna(0)    
+    df = df.join(Chaikin)  
+    return df
 
 # Disparity Index (10)
 def DisparityIndex(price,n) :

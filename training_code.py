@@ -35,7 +35,7 @@ val_err_file = open("val_error.txt","w+")
 
 def load_data():
     from numpy import genfromtxt
-    cols = [i for i in range(0,43)]
+    cols = [i for i in range(0,42)]
     train = genfromtxt('C:\\Users\\Administrator\\Desktop\\Data Copy for DL\\Training sets\\training_data.csv', delimiter=',',usecols=cols, skip_header=20)
     train  = np.delete(train, np.s_[0:3], axis=1) 
 #    train = np.delete(train, np.s_[39:55], axis=1)
@@ -165,7 +165,7 @@ def run_mlp(train, val, num_epochs):
 #    val_err_list,train_err_list = run_mlp(train , test, 5)
 
 
-val_err_list,train_err_list = run_mlp(train , validation, 1000)
+val_err_list,train_err_list = run_mlp(train , validation, 100)
 
 #end_time = timeit.default_timer()
 #

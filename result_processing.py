@@ -12,16 +12,15 @@ import pandas as pd
 os.chdir('C:\\Users\\Administrator\\Desktop\\Data Copy for DL')
 cwd = os.getcwd()
 
-path = 'C:\\Users\\Administrator\\Desktop\\Data Copy for DL\\walk_forward_learn_on_16May\95_to_98'
-file = 'Prediction_95_98_walk_forward.txt'
-file1 = 'test_name_date.csv'
+path = 'C:\\Users\\Administrator\\Desktop\\Data Copy for DL\\walk_forward_learn_on_16May\\01-05'
+file = 'Prediction_01_05_2006_walk_forward.txt'
+file1 = 'test_name_date_2006.csv'
 
-data_name = pd.read_csv(os.path.join(path ,file1) ,sep =',', header = None) 
-data1 = pd.read_csv(os.path.join(path ,file) ,sep =',', header = None)
+data_name = pd.read_csv(os.path.join(path,file1) ,sep =',', header = None) 
+data1 = pd.read_csv(os.path.join(path,file) ,sep =',', header = None)
 
 data1[0] = data1[0].apply(lambda s: float(s.strip('[ ')))
-data1[1] = data1[1].apply(lambda s: float(s.strip(']')))
-
+data1[1] = data1[0].apply(lambda s: (1-s))
 data_name['predictions'] = data1[2]
 data_name['conf_0'] = data1[0]
 data_name['conf_1'] = data1[1]
@@ -72,8 +71,8 @@ def hit_rate(data ,col):
 #    data.drop('Check', axis =1, inplace = True)
     b = (data[col] == 1).sum()
     return d, b
-data_main[2][data_main[2]== 1].count()
-data_name['predictions_threshold'] = data_name.apply(lambda s: 1 if (s['conf_1'] > 0.9 and s['conf_1'] > s['conf_0']) else 0, axis=1)
+print(data_name[2][data_name[2]== 1].count())
+data_name['predictions_threshold'] = data_name.apply(lambda s: 1 if (s['conf_1'] > 0.7 and s['conf_1'] > s['conf_0']) else 0, axis=1)
 print (hit_rate(data_name,'predictions_threshold'))
 print (hit_rate(data_name,'predictions'))
 
